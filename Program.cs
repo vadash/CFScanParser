@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Linq;
+﻿using System.Text.RegularExpressions;
 
 class Program
 {
     static void Main(string[] args)
     {
+        const double howManyIPsToKeepPercent = 0.33;
         Console.Write("Enter path to JSON file: ");
         string filePath = Console.ReadLine();
         filePath = filePath.Replace("\"", "");
@@ -26,6 +23,15 @@ class Program
                 .Select(m => m.Value.Trim('"'))
                 .ToList();
 
+            // Calculate how many IPs to keep
+            int totalIps = ips.Count;
+            int ipsToKeep = Math.Max(1, (int)(totalIps * howManyIPsToKeepPercent));
+            Console.WriteLine($"Total IPs found: {totalIps}");
+            Console.WriteLine($"Keeping top {ipsToKeep} IPs");
+
+            // Take only the fastest
+            ips = ips.Take(ipsToKeep).ToList();
+
             // Group by first two octets
             var groupedIps = ips
                 .GroupBy(ip =>
@@ -33,7 +39,7 @@ class Program
                     var parts = ip.Split('.');
                     return $"{parts[0]}.{parts[1]}";
                 })
-                .ToDictionary(g => g.Key, g => g.Take(3).ToList());
+                .ToDictionary(g => g.Key, g => g.Take(2).ToList());
 
             // Prepare output
             var outputLines = groupedIps
@@ -51,6 +57,7 @@ class Program
             File.WriteAllText(outputPath, outputContent);
 
             Console.WriteLine($"Done! Results saved to: {outputPath}");
+            Thread.Sleep(5000);
         }
         catch (Exception ex)
         {
